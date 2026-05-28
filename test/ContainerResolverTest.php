@@ -24,17 +24,17 @@ final class ContainerResolverTest extends TestCase
 {
     public function testGetReturnsRegisteredService(): void
     {
-        $service = new Implementation();
-        $resolver = new ContainerResolver(new ArrayContainer([
-            Implementation::class => $service,
+        $implementation = new Implementation();
+        $containerResolver = new ContainerResolver(new ArrayContainer([
+            Implementation::class => $implementation,
         ]));
 
-        self::assertSame($service, $resolver->get(Implementation::class));
+        self::assertSame($implementation, $containerResolver->get(Implementation::class));
     }
 
     public function testGetThrowsMissingExceptionWhenServiceIsNotRegistered(): void
     {
-        $resolver = ContainerResolver::forFactory(new ArrayContainer(), ExampleFactory::class);
+        $containerResolver = ContainerResolver::forFactory(new ArrayContainer(), ExampleFactory::class);
 
         $this->expectException(MissingContainerServiceException::class);
         $this->expectExceptionMessage(sprintf(
@@ -43,18 +43,18 @@ final class ContainerResolverTest extends TestCase
             ExampleFactory::class,
         ));
 
-        $resolver->get(Implementation::class);
+        $containerResolver->get(Implementation::class);
     }
 
     public function testGetWrapsNotFoundExceptionThrownByContainer(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer(
+        $containerResolver = new ContainerResolver(new ArrayContainer(
             [Implementation::class => new Implementation()],
             [Implementation::class],
         ));
 
         try {
-            $resolver->get(Implementation::class);
+            $containerResolver->get(Implementation::class);
             self::fail('Expected missing service exception.');
         } catch (MissingContainerServiceException $exception) {
             self::assertSame(
@@ -67,7 +67,7 @@ final class ContainerResolverTest extends TestCase
 
     public function testGetThrowsInvalidExceptionWhenServiceDoesNotMatchServiceId(): void
     {
-        $resolver = ContainerResolver::forFactory(new ArrayContainer([
+        $containerResolver = ContainerResolver::forFactory(new ArrayContainer([
             Implementation::class => new OtherImplementation(),
         ]), ExampleFactory::class);
 
@@ -80,22 +80,22 @@ final class ContainerResolverTest extends TestCase
             OtherImplementation::class,
         ));
 
-        $resolver->get(Implementation::class);
+        $containerResolver->get(Implementation::class);
     }
 
     public function testGetAsReturnsCustomServiceIdWithExpectedType(): void
     {
-        $service = new Implementation();
-        $resolver = new ContainerResolver(new ArrayContainer([
-            'app.service' => $service,
+        $implementation = new Implementation();
+        $containerResolver = new ContainerResolver(new ArrayContainer([
+            'app.service' => $implementation,
         ]));
 
-        self::assertSame($service, $resolver->getAs('app.service', Contract::class));
+        self::assertSame($implementation, $containerResolver->getAs('app.service', Contract::class));
     }
 
     public function testGetAsThrowsInvalidExceptionForWrongType(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'app.service' => new OtherImplementation(),
         ]));
 
@@ -106,97 +106,97 @@ final class ContainerResolverTest extends TestCase
             OtherImplementation::class,
         ));
 
-        $resolver->getAs('app.service', Contract::class);
+        $containerResolver->getAs('app.service', Contract::class);
     }
 
     public function testGetExistingReturnsRawServiceValue(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'scalar' => 'value',
         ]));
 
-        self::assertSame('value', $resolver->getExisting('scalar'));
+        self::assertSame('value', $containerResolver->getExisting('scalar'));
     }
 
     public function testGetExistingThrowsMissingExceptionForMissingService(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer());
+        $containerResolver = new ContainerResolver(new ArrayContainer());
 
         $this->expectException(MissingContainerServiceException::class);
 
-        $resolver->getExisting('missing');
+        $containerResolver->getExisting('missing');
     }
 
     public function testHasProxiesContainerHas(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'known' => null,
         ]));
 
-        self::assertTrue($resolver->has('known'));
-        self::assertFalse($resolver->has('missing'));
+        self::assertTrue($containerResolver->has('known'));
+        self::assertFalse($containerResolver->has('missing'));
     }
 
     public function testOptionalReturnsDefaultWhenServiceIsMissing(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer());
+        $containerResolver = new ContainerResolver(new ArrayContainer());
 
-        self::assertSame('default', $resolver->optional('missing', 'default'));
+        self::assertSame('default', $containerResolver->optional('missing', 'default'));
     }
 
     public function testOptionalReturnsServiceWhenPresent(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'known' => 'value',
         ]));
 
-        self::assertSame('value', $resolver->optional('known', 'default'));
+        self::assertSame('value', $containerResolver->optional('known', 'default'));
     }
 
     public function testOptionalArrayReturnsEmptyArrayWhenServiceIsMissing(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer());
+        $containerResolver = new ContainerResolver(new ArrayContainer());
 
-        self::assertSame([], $resolver->optionalArray());
+        self::assertSame([], $containerResolver->optionalArray());
     }
 
     public function testOptionalArrayReturnsArrayWhenServiceIsPresent(): void
     {
         $config = ['debug' => true];
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'config' => $config,
         ]));
 
-        self::assertSame($config, $resolver->optionalArray());
+        self::assertSame($config, $containerResolver->optionalArray());
     }
 
     public function testOptionalArrayThrowsInvalidExceptionWhenServiceIsNotArray(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'config' => 'invalid',
         ]));
 
         $this->expectException(InvalidContainerServiceException::class);
         $this->expectExceptionMessage('Container service "config" must be array; string given.');
 
-        $resolver->optionalArray();
+        $containerResolver->optionalArray();
     }
 
     public function testContextIsExposedForConfigReaderReuse(): void
     {
-        $resolver = ContainerResolver::forContext(new ArrayContainer(), 'context');
+        $containerResolver = ContainerResolver::forContext(new ArrayContainer(), 'context');
 
-        self::assertSame('context', $resolver->context());
+        self::assertSame('context', $containerResolver->context());
     }
 
     public function testExceptionMessagesDoNotDumpServiceValues(): void
     {
-        $resolver = new ContainerResolver(new ArrayContainer([
+        $containerResolver = new ContainerResolver(new ArrayContainer([
             'config' => ['secret' => 'token'],
         ]));
 
         try {
-            $resolver->getAs('config', Contract::class);
+            $containerResolver->getAs('config', Contract::class);
             self::fail('Expected invalid service exception.');
         } catch (InvalidContainerServiceException $exception) {
             self::assertStringNotContainsString('secret', $exception->getMessage());

@@ -39,9 +39,9 @@ final readonly class ConfigReader
         return new self($config, $context);
     }
 
-    public static function fromContainer(ContainerResolver $resolver, string $serviceId = 'config'): self
+    public static function fromContainer(ContainerResolver $containerResolver, string $serviceId = 'config'): self
     {
-        return new self($resolver->optionalArray($serviceId), $resolver->context());
+        return new self($containerResolver->optionalArray($serviceId), $containerResolver->context());
     }
 
     public function has(string $path): bool
@@ -287,16 +287,16 @@ final readonly class ConfigReader
      * @template T of UnitEnum
      *
      * @param class-string<T> $enumClass
-     * @param T               $default
+     * @param T               $unitEnum
      *
      * @return T
      */
-    public function enum(string $path, string $enumClass, UnitEnum $default): UnitEnum
+    public function enum(string $path, string $enumClass, UnitEnum $unitEnum): UnitEnum
     {
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
-            return $default;
+            return $unitEnum;
         }
 
         return $this->assertEnum($path, $enumClass, $value);
@@ -425,15 +425,15 @@ final readonly class ConfigReader
 
         $value = trim($value);
 
-        foreach ($enumClass::cases() as $case) {
-            if ($case->name === $value) {
-                return $case;
+        foreach ($enumClass::cases() as $unitEnum) {
+            if ($unitEnum->name === $value) {
+                return $unitEnum;
             }
         }
 
-        foreach ($enumClass::cases() as $case) {
-            if (0 === strcasecmp($case->name, $value)) {
-                return $case;
+        foreach ($enumClass::cases() as $unitEnum) {
+            if (0 === strcasecmp($unitEnum->name, $value)) {
+                return $unitEnum;
             }
         }
 
@@ -451,11 +451,11 @@ final readonly class ConfigReader
     {
         $allowed = [];
 
-        foreach ($enumClass::cases() as $case) {
-            $allowed[] = $case->name;
+        foreach ($enumClass::cases() as $unitEnum) {
+            $allowed[] = $unitEnum->name;
 
-            if ($case instanceof BackedEnum && is_string($case->value) && $case->value !== $case->name) {
-                $allowed[] = $case->value;
+            if ($unitEnum instanceof BackedEnum && is_string($unitEnum->value) && $unitEnum->value !== $unitEnum->name) {
+                $allowed[] = $unitEnum->value;
             }
         }
 

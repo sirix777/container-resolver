@@ -17,13 +17,13 @@ final class MissingContainerServiceExceptionTest extends TestCase
 {
     public function testForServiceCreatesNotFoundExceptionWithPreviousException(): void
     {
-        $previous = new RuntimeException('previous');
-        $exception = MissingContainerServiceException::forService('config', 'factory', $previous);
+        $runtimeException = new RuntimeException('previous');
+        $missingContainerServiceException = MissingContainerServiceException::forService('config', 'factory', $runtimeException);
 
-        self::assertInstanceOf(NotFoundExceptionInterface::class, $exception);
-        self::assertInstanceOf(ContainerResolverException::class, $exception);
-        self::assertInstanceOf(ResolverException::class, $exception);
-        self::assertSame('Container service "config" is required by factory but is not registered.', $exception->getMessage());
-        self::assertSame($previous, $exception->getPrevious());
+        self::assertInstanceOf(NotFoundExceptionInterface::class, $missingContainerServiceException);
+        self::assertInstanceOf(ContainerResolverException::class, $missingContainerServiceException);
+        self::assertInstanceOf(ResolverException::class, $missingContainerServiceException);
+        self::assertSame('Container service "config" is required by factory but is not registered.', $missingContainerServiceException->getMessage());
+        self::assertSame($runtimeException, $missingContainerServiceException->getPrevious());
     }
 }

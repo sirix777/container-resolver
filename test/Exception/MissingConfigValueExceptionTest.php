@@ -15,10 +15,10 @@ final class MissingConfigValueExceptionTest extends TestCase
 {
     public function testForPathCreatesConfigException(): void
     {
-        $exception = MissingConfigValueException::forPath('app.name', 'factory');
+        $missingConfigValueException = MissingConfigValueException::forPath('app.name', 'factory');
 
-        self::assertInstanceOf(ConfigReaderException::class, $exception);
-        self::assertInstanceOf(ResolverException::class, $exception);
-        self::assertSame('Configuration value "app.name" is required by factory but is not defined.', $exception->getMessage());
+        self::assertInstanceOf(ConfigReaderException::class, $missingConfigValueException);
+        self::assertInstanceOf(ResolverException::class, $missingConfigValueException);
+        self::assertSame('Configuration value "app.name" is required by factory but is not defined.', $missingConfigValueException->getMessage());
     }
 }

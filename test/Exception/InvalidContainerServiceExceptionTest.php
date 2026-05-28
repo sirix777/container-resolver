@@ -16,11 +16,11 @@ final class InvalidContainerServiceExceptionTest extends TestCase
 {
     public function testForTypeCreatesContainerException(): void
     {
-        $exception = InvalidContainerServiceException::forType('config', 'array', 'invalid', 'factory');
+        $invalidContainerServiceException = InvalidContainerServiceException::forType('config', 'array', 'invalid', 'factory');
 
-        self::assertInstanceOf(ContainerExceptionInterface::class, $exception);
-        self::assertInstanceOf(ContainerResolverException::class, $exception);
-        self::assertInstanceOf(ResolverException::class, $exception);
-        self::assertSame('Container service "config" required by factory must be array; string given.', $exception->getMessage());
+        self::assertInstanceOf(ContainerExceptionInterface::class, $invalidContainerServiceException);
+        self::assertInstanceOf(ContainerResolverException::class, $invalidContainerServiceException);
+        self::assertInstanceOf(ResolverException::class, $invalidContainerServiceException);
+        self::assertSame('Container service "config" required by factory must be array; string given.', $invalidContainerServiceException->getMessage());
     }
 }

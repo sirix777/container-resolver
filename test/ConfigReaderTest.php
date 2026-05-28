@@ -23,7 +23,7 @@ final class ConfigReaderTest extends TestCase
 {
     public function testFromContainerReadsConfigServiceAndPreservesContext(): void
     {
-        $resolver = ContainerResolver::forContext(new ArrayContainer([
+        $containerResolver = ContainerResolver::forContext(new ArrayContainer([
             'config' => [
                 'app' => [
                     'name' => 'demo',
@@ -31,12 +31,12 @@ final class ConfigReaderTest extends TestCase
             ],
         ]), 'factory');
 
-        $config = ConfigReader::fromContainer($resolver);
+        $configReader = ConfigReader::fromContainer($containerResolver);
 
-        self::assertSame('demo', $config->requiredString('app.name'));
+        self::assertSame('demo', $configReader->requiredString('app.name'));
 
         try {
-            $config->requiredString('app.missing');
+            $configReader->requiredString('app.missing');
             self::fail('Expected missing config exception.');
         } catch (MissingConfigValueException $exception) {
             self::assertSame(
@@ -48,124 +48,124 @@ final class ConfigReaderTest extends TestCase
 
     public function testFromContainerUsesEmptyConfigWhenConfigServiceIsMissing(): void
     {
-        $config = ConfigReader::fromContainer(new ContainerResolver(new ArrayContainer()));
+        $configReader = ConfigReader::fromContainer(new ContainerResolver(new ArrayContainer()));
 
-        self::assertFalse($config->has('app.name'));
+        self::assertFalse($configReader->has('app.name'));
     }
 
     public function testHasReturnsTrueForExistingPathEvenWhenValueIsNull(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'app' => [
                 'name' => null,
             ],
         ]);
 
-        self::assertTrue($config->has('app.name'));
+        self::assertTrue($configReader->has('app.name'));
     }
 
     public function testHasReturnsFalseForMissingPath(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'app' => [],
         ]);
 
-        self::assertFalse($config->has('app.name'));
+        self::assertFalse($configReader->has('app.name'));
     }
 
     public function testGetReturnsConfiguredValue(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'app' => [
                 'name' => 'demo',
             ],
         ]);
 
-        self::assertSame('demo', $config->get('app.name'));
+        self::assertSame('demo', $configReader->get('app.name'));
     }
 
     public function testGetReturnsDefaultForMissingValue(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
-        self::assertSame('demo', $config->get('app.name', 'demo'));
+        self::assertSame('demo', $configReader->get('app.name', 'demo'));
     }
 
     public function testRequiredThrowsMissingExceptionForMissingPath(): void
     {
-        $config = ConfigReader::fromArray([], 'factory');
+        $configReader = ConfigReader::fromArray([], 'factory');
 
         $this->expectException(MissingConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "app.name" is required by factory but is not defined.');
 
-        $config->required('app.name');
+        $configReader->required('app.name');
     }
 
     public function testStringReturnsDefaultWhenMissing(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
-        self::assertSame('demo', $config->string('app.name', 'demo'));
+        self::assertSame('demo', $configReader->string('app.name', 'demo'));
     }
 
     public function testStringReturnsConfiguredString(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => 'api']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => 'api']]);
 
-        self::assertSame('api', $config->string('app.name', 'demo'));
+        self::assertSame('api', $configReader->string('app.name', 'demo'));
     }
 
     public function testStringTrimsConfiguredString(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => ' api ']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => ' api ']]);
 
-        self::assertSame('api', $config->string('app.name', 'demo'));
+        self::assertSame('api', $configReader->string('app.name', 'demo'));
     }
 
     public function testStringRejectsNonStringExistingValue(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => 123]]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => 123]]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "app.name" must be string; int given.');
 
-        $config->string('app.name', 'demo');
+        $configReader->string('app.name', 'demo');
     }
 
     public function testRequiredStringThrowsWhenMissing(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredString('app.name');
+        $configReader->requiredString('app.name');
     }
 
     public function testRequiredStringRejectsNonStringExistingValue(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => false]]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => false]]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "app.name" must be string; bool given.');
 
-        $config->requiredString('app.name');
+        $configReader->requiredString('app.name');
     }
 
     public function testNonEmptyStringRejectsEmptyString(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => '']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => '']]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "app.name" must be non-empty-string; string given.');
 
-        $config->nonEmptyString('app.name', 'demo');
+        $configReader->nonEmptyString('app.name', 'demo');
     }
 
     public function testNonEmptyStringTrimsAndRejectsBlankString(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => ' demo ']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => ' demo ']]);
 
-        self::assertSame('demo', $config->nonEmptyString('app.name', 'fallback'));
+        self::assertSame('demo', $configReader->nonEmptyString('app.name', 'fallback'));
 
         $blank = ConfigReader::fromArray(['app' => ['name' => '   ']]);
 
@@ -176,10 +176,10 @@ final class ConfigReaderTest extends TestCase
 
     public function testRequiredNonEmptyStringRejectsMissingAndEmptyValues(): void
     {
-        $missing = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         try {
-            $missing->requiredNonEmptyString('app.name');
+            $configReader->requiredNonEmptyString('app.name');
             self::fail('Expected missing config exception.');
         } catch (MissingConfigValueException) {
             self::addToAssertionCount(1);
@@ -194,97 +194,97 @@ final class ConfigReaderTest extends TestCase
 
     public function testOptionalStringReturnsNullWhenMissing(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
-        self::assertNull($config->optionalString('app.name'));
+        self::assertNull($configReader->optionalString('app.name'));
     }
 
     public function testOptionalStringReturnsStringWhenPresent(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => 'demo']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => 'demo']]);
 
-        self::assertSame('demo', $config->optionalString('app.name'));
+        self::assertSame('demo', $configReader->optionalString('app.name'));
     }
 
     public function testOptionalStringTrimsStringWhenPresent(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => ' demo ']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => ' demo ']]);
 
-        self::assertSame('demo', $config->optionalString('app.name'));
+        self::assertSame('demo', $configReader->optionalString('app.name'));
     }
 
     public function testOptionalStringRejectsNonStringWhenPresent(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => null]]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => null]]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "app.name" must be string; null given.');
 
-        $config->optionalString('app.name');
+        $configReader->optionalString('app.name');
     }
 
     public function testOptionalNonEmptyStringReturnsNullWhenMissing(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
-        self::assertNull($config->optionalNonEmptyString('app.name'));
+        self::assertNull($configReader->optionalNonEmptyString('app.name'));
     }
 
     public function testOptionalNonEmptyStringReturnsNullForEmptyString(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => '']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => '']]);
 
-        self::assertNull($config->optionalNonEmptyString('app.name'));
+        self::assertNull($configReader->optionalNonEmptyString('app.name'));
     }
 
     public function testOptionalNonEmptyStringReturnsNullForBlankString(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => '   ']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => '   ']]);
 
-        self::assertNull($config->optionalNonEmptyString('app.name'));
+        self::assertNull($configReader->optionalNonEmptyString('app.name'));
     }
 
     public function testOptionalNonEmptyStringReturnsStringWhenPresent(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => ' demo ']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => ' demo ']]);
 
-        self::assertSame('demo', $config->optionalNonEmptyString('app.name'));
+        self::assertSame('demo', $configReader->optionalNonEmptyString('app.name'));
     }
 
     public function testOptionalNonEmptyStringRejectsNonStringWhenPresent(): void
     {
-        $config = ConfigReader::fromArray(['app' => ['name' => 123]]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => 123]]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "app.name" must be string; int given.');
 
-        $config->optionalNonEmptyString('app.name');
+        $configReader->optionalNonEmptyString('app.name');
     }
 
     public function testBoolAcceptsOnlyBool(): void
     {
-        $config = ConfigReader::fromArray(['debug' => false]);
+        $configReader = ConfigReader::fromArray(['debug' => false]);
 
-        self::assertFalse($config->bool('debug', true));
-        self::assertTrue($config->bool('missing', true));
+        self::assertFalse($configReader->bool('debug', true));
+        self::assertTrue($configReader->bool('missing', true));
     }
 
     public function testBoolRejectsStringBooleans(): void
     {
-        $config = ConfigReader::fromArray(['debug' => 'false']);
+        $configReader = ConfigReader::fromArray(['debug' => 'false']);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "debug" must be bool; string given.');
 
-        $config->bool('debug', false);
+        $configReader->bool('debug', false);
     }
 
     public function testRequiredBoolRejectsMissingAndInvalidValues(): void
     {
-        $missing = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         try {
-            $missing->requiredBool('debug');
+            $configReader->requiredBool('debug');
             self::fail('Expected missing config exception.');
         } catch (MissingConfigValueException) {
             self::addToAssertionCount(1);
@@ -299,28 +299,28 @@ final class ConfigReaderTest extends TestCase
 
     public function testIntAcceptsOnlyInt(): void
     {
-        $config = ConfigReader::fromArray(['port' => 8080]);
+        $configReader = ConfigReader::fromArray(['port' => 8080]);
 
-        self::assertSame(8080, $config->int('port', 80));
-        self::assertSame(80, $config->int('missing', 80));
+        self::assertSame(8080, $configReader->int('port', 80));
+        self::assertSame(80, $configReader->int('missing', 80));
     }
 
     public function testIntRejectsNumericStrings(): void
     {
-        $config = ConfigReader::fromArray(['port' => '8080']);
+        $configReader = ConfigReader::fromArray(['port' => '8080']);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "port" must be int; string given.');
 
-        $config->int('port', 80);
+        $configReader->int('port', 80);
     }
 
     public function testRequiredIntRejectsMissingAndInvalidValues(): void
     {
-        $missing = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         try {
-            $missing->requiredInt('port');
+            $configReader->requiredInt('port');
             self::fail('Expected missing config exception.');
         } catch (MissingConfigValueException) {
             self::addToAssertionCount(1);
@@ -335,125 +335,125 @@ final class ConfigReaderTest extends TestCase
 
     public function testArrayAcceptsArraysAndReturnsDefaultWhenMissing(): void
     {
-        $config = ConfigReader::fromArray(['items' => ['a', 'b']]);
+        $configReader = ConfigReader::fromArray(['items' => ['a', 'b']]);
 
-        self::assertSame(['a', 'b'], $config->array('items', []));
-        self::assertSame(['fallback'], $config->array('missing', ['fallback']));
+        self::assertSame(['a', 'b'], $configReader->array('items', []));
+        self::assertSame(['fallback'], $configReader->array('missing', ['fallback']));
     }
 
     public function testArrayRejectsScalarValues(): void
     {
-        $config = ConfigReader::fromArray(['items' => 'invalid']);
+        $configReader = ConfigReader::fromArray(['items' => 'invalid']);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "items" must be array; string given.');
 
-        $config->array('items', []);
+        $configReader->array('items', []);
     }
 
     public function testRequiredArrayRejectsMissingValues(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredArray('items');
+        $configReader->requiredArray('items');
     }
 
     public function testListAcceptsListsAndReturnsDefaultWhenMissing(): void
     {
-        $config = ConfigReader::fromArray(['entities' => ['src/App/src/Entity']]);
+        $configReader = ConfigReader::fromArray(['entities' => ['src/App/src/Entity']]);
 
-        self::assertSame(['src/App/src/Entity'], $config->list('entities', []));
-        self::assertSame(['fallback'], $config->list('missing', ['fallback']));
+        self::assertSame(['src/App/src/Entity'], $configReader->list('entities', []));
+        self::assertSame(['fallback'], $configReader->list('missing', ['fallback']));
     }
 
     public function testListRejectsMaps(): void
     {
-        $config = ConfigReader::fromArray(['entities' => ['app' => 'src/App/src/Entity']]);
+        $configReader = ConfigReader::fromArray(['entities' => ['app' => 'src/App/src/Entity']]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "entities" must be list<mixed>; array given.');
 
-        $config->list('entities', []);
+        $configReader->list('entities', []);
     }
 
     public function testListRejectsScalarValues(): void
     {
-        $config = ConfigReader::fromArray(['entities' => 'src/App/src/Entity']);
+        $configReader = ConfigReader::fromArray(['entities' => 'src/App/src/Entity']);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "entities" must be array; string given.');
 
-        $config->list('entities', []);
+        $configReader->list('entities', []);
     }
 
     public function testRequiredListRejectsMissingValues(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredList('entities');
+        $configReader->requiredList('entities');
     }
 
     public function testStringListAcceptsStringListsAndReturnsDefaultWhenMissing(): void
     {
-        $config = ConfigReader::fromArray(['entities' => [' src/App/src/Entity ']]);
+        $configReader = ConfigReader::fromArray(['entities' => [' src/App/src/Entity ']]);
 
-        self::assertSame(['src/App/src/Entity'], $config->stringList('entities', []));
-        self::assertSame(['fallback'], $config->stringList('missing', ['fallback']));
+        self::assertSame(['src/App/src/Entity'], $configReader->stringList('entities', []));
+        self::assertSame(['fallback'], $configReader->stringList('missing', ['fallback']));
     }
 
     public function testStringListRejectsNonStringItems(): void
     {
-        $config = ConfigReader::fromArray(['entities' => ['src/App/src/Entity', 123]]);
+        $configReader = ConfigReader::fromArray(['entities' => ['src/App/src/Entity', 123]]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "entities.1" must be string; int given.');
 
-        $config->stringList('entities', []);
+        $configReader->stringList('entities', []);
     }
 
     public function testRequiredStringListRejectsMissingValues(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredStringList('entities');
+        $configReader->requiredStringList('entities');
     }
 
     public function testNonEmptyStringListAcceptsNonEmptyStringListsAndReturnsDefaultWhenMissing(): void
     {
-        $config = ConfigReader::fromArray(['entities' => [' src/App/src/Entity ']]);
+        $configReader = ConfigReader::fromArray(['entities' => [' src/App/src/Entity ']]);
 
-        self::assertSame(['src/App/src/Entity'], $config->nonEmptyStringList('entities', []));
-        self::assertSame(['fallback'], $config->nonEmptyStringList('missing', ['fallback']));
+        self::assertSame(['src/App/src/Entity'], $configReader->nonEmptyStringList('entities', []));
+        self::assertSame(['fallback'], $configReader->nonEmptyStringList('missing', ['fallback']));
     }
 
     public function testNonEmptyStringListRejectsEmptyStringItems(): void
     {
-        $config = ConfigReader::fromArray(['entities' => ['']]);
+        $configReader = ConfigReader::fromArray(['entities' => ['']]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "entities.0" must be non-empty-string; string given.');
 
-        $config->nonEmptyStringList('entities', []);
+        $configReader->nonEmptyStringList('entities', []);
     }
 
     public function testRequiredNonEmptyStringListRejectsMissingValues(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredNonEmptyStringList('entities');
+        $configReader->requiredNonEmptyStringList('entities');
     }
 
     public function testMapAcceptsStringKeyedArrays(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'storages' => [
                 'redis' => 'app.storage.redis',
                 'db' => 'app.storage.db',
@@ -463,123 +463,123 @@ final class ConfigReaderTest extends TestCase
         self::assertSame([
             'redis' => 'app.storage.redis',
             'db' => 'app.storage.db',
-        ], $config->map('storages', []));
-        self::assertSame(['default' => true], $config->map('missing', ['default' => true]));
+        ], $configReader->map('storages', []));
+        self::assertSame(['default' => true], $configReader->map('missing', ['default' => true]));
     }
 
     public function testMapRejectsLists(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'storages' => ['app.storage.redis'],
         ]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "storages" must be map<string, mixed>; array given.');
 
-        $config->map('storages', []);
+        $configReader->map('storages', []);
     }
 
     public function testRequiredMapRejectsMissingValues(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredMap('storages');
+        $configReader->requiredMap('storages');
     }
 
     public function testEnumReturnsDefaultWhenMissing(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
-        self::assertSame(LogLevel::Info, $config->enum('log.level', LogLevel::class, LogLevel::Info));
+        self::assertSame(LogLevel::Info, $configReader->enum('log.level', LogLevel::class, LogLevel::Info));
     }
 
     public function testEnumAcceptsExistingEnumInstances(): void
     {
-        $config = ConfigReader::fromArray(['log' => ['level' => LogLevel::Warning]]);
+        $configReader = ConfigReader::fromArray(['log' => ['level' => LogLevel::Warning]]);
 
-        self::assertSame(LogLevel::Warning, $config->enum('log.level', LogLevel::class, LogLevel::Info));
+        self::assertSame(LogLevel::Warning, $configReader->enum('log.level', LogLevel::class, LogLevel::Info));
     }
 
     public function testEnumResolvesCaseNameCaseInsensitively(): void
     {
-        $config = ConfigReader::fromArray(['log' => ['level' => ' debug ']]);
+        $configReader = ConfigReader::fromArray(['log' => ['level' => ' debug ']]);
 
-        self::assertSame(LogLevel::Debug, $config->enum('log.level', LogLevel::class, LogLevel::Info));
+        self::assertSame(LogLevel::Debug, $configReader->enum('log.level', LogLevel::class, LogLevel::Info));
     }
 
     public function testEnumResolvesBackedEnumValueStrictly(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'driver' => ' cookie ',
             'log' => ['level' => 100],
         ]);
 
-        self::assertSame(StringDriver::Cookie, $config->requiredEnum('driver', StringDriver::class));
-        self::assertSame(LogLevel::Debug, $config->requiredEnum('log.level', LogLevel::class));
+        self::assertSame(StringDriver::Cookie, $configReader->requiredEnum('driver', StringDriver::class));
+        self::assertSame(LogLevel::Debug, $configReader->requiredEnum('log.level', LogLevel::class));
     }
 
     public function testEnumDoesNotCoerceNumericStringsForIntBackedEnums(): void
     {
-        $config = ConfigReader::fromArray(['log' => ['level' => '100']]);
+        $configReader = ConfigReader::fromArray(['log' => ['level' => '100']]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "log.level" must be one of "Debug", "Info", "Warning"; "100" given.');
 
-        $config->enum('log.level', LogLevel::class, LogLevel::Info);
+        $configReader->enum('log.level', LogLevel::class, LogLevel::Info);
     }
 
     public function testEnumSupportsUnitEnumsByCaseName(): void
     {
-        $config = ConfigReader::fromArray(['mode' => 'Async']);
+        $configReader = ConfigReader::fromArray(['mode' => 'Async']);
 
-        self::assertSame(UnitMode::Async, $config->requiredEnum('mode', UnitMode::class));
+        self::assertSame(UnitMode::Async, $configReader->requiredEnum('mode', UnitMode::class));
     }
 
     public function testRequiredEnumRejectsMissingValues(): void
     {
-        $config = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         $this->expectException(MissingConfigValueException::class);
 
-        $config->requiredEnum('log.level', LogLevel::class);
+        $configReader->requiredEnum('log.level', LogLevel::class);
     }
 
     public function testRequiredEnumRejectsUnsupportedValues(): void
     {
-        $config = ConfigReader::fromArray(['log' => ['level' => 'verbose']]);
+        $configReader = ConfigReader::fromArray(['log' => ['level' => 'verbose']]);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "log.level" must be one of "Debug", "Info", "Warning"; "verbose" given.');
 
-        $config->requiredEnum('log.level', LogLevel::class);
+        $configReader->requiredEnum('log.level', LogLevel::class);
     }
 
     public function testStringEnumAcceptsAllowedValues(): void
     {
-        $config = ConfigReader::fromArray(['driver' => ' bearer ']);
+        $configReader = ConfigReader::fromArray(['driver' => ' bearer ']);
 
-        self::assertSame('bearer', $config->stringEnum('driver', ['bearer', 'cookie'], 'cookie'));
-        self::assertSame('cookie', $config->stringEnum('missing', ['bearer', 'cookie'], 'cookie'));
+        self::assertSame('bearer', $configReader->stringEnum('driver', ['bearer', 'cookie'], 'cookie'));
+        self::assertSame('cookie', $configReader->stringEnum('missing', ['bearer', 'cookie'], 'cookie'));
     }
 
     public function testStringEnumRejectsUnsupportedValues(): void
     {
-        $config = ConfigReader::fromArray(['driver' => 'redis']);
+        $configReader = ConfigReader::fromArray(['driver' => 'redis']);
 
         $this->expectException(InvalidConfigValueException::class);
         $this->expectExceptionMessage('Configuration value "driver" must be one of "bearer", "cookie"; "redis" given.');
 
-        $config->stringEnum('driver', ['bearer', 'cookie'], 'bearer');
+        $configReader->stringEnum('driver', ['bearer', 'cookie'], 'bearer');
     }
 
     public function testRequiredStringEnumRejectsMissingUnsupportedAndNonStringValues(): void
     {
-        $missing = ConfigReader::fromArray([]);
+        $configReader = ConfigReader::fromArray([]);
 
         try {
-            $missing->requiredStringEnum('driver', ['bearer', 'cookie']);
+            $configReader->requiredStringEnum('driver', ['bearer', 'cookie']);
             self::fail('Expected missing config exception.');
         } catch (MissingConfigValueException) {
             self::addToAssertionCount(1);
@@ -594,23 +594,23 @@ final class ConfigReaderTest extends TestCase
 
     public function testMultipleReadersDoNotLeakValuesBetweenInstances(): void
     {
-        $first = ConfigReader::fromArray(['app' => ['name' => 'first']]);
+        $configReader = ConfigReader::fromArray(['app' => ['name' => 'first']]);
         $second = ConfigReader::fromArray(['app' => ['name' => 'second']]);
 
-        self::assertSame('first', $first->requiredString('app.name'));
+        self::assertSame('first', $configReader->requiredString('app.name'));
         self::assertSame('second', $second->requiredString('app.name'));
     }
 
     public function testExceptionMessagesDoNotDumpFullConfigArrays(): void
     {
-        $config = ConfigReader::fromArray([
+        $configReader = ConfigReader::fromArray([
             'app' => [
                 'secret' => 'token',
             ],
         ]);
 
         try {
-            $config->string('app', 'demo');
+            $configReader->string('app', 'demo');
             self::fail('Expected invalid config exception.');
         } catch (InvalidConfigValueException $exception) {
             self::assertStringNotContainsString('secret', $exception->getMessage());

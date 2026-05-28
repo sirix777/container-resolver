@@ -15,20 +15,20 @@ final class InvalidConfigValueExceptionTest extends TestCase
 {
     public function testForTypeCreatesConfigException(): void
     {
-        $exception = InvalidConfigValueException::forType('app.name', 'string', 123, 'factory');
+        $invalidConfigValueException = InvalidConfigValueException::forType('app.name', 'string', 123, 'factory');
 
-        self::assertInstanceOf(ConfigReaderException::class, $exception);
-        self::assertInstanceOf(ResolverException::class, $exception);
-        self::assertSame('Configuration value "app.name" required by factory must be string; int given.', $exception->getMessage());
+        self::assertInstanceOf(ConfigReaderException::class, $invalidConfigValueException);
+        self::assertInstanceOf(ResolverException::class, $invalidConfigValueException);
+        self::assertSame('Configuration value "app.name" required by factory must be string; int given.', $invalidConfigValueException->getMessage());
     }
 
     public function testForAllowedValuesIncludesStringActualValue(): void
     {
-        $exception = InvalidConfigValueException::forAllowedValues('driver', ['bearer', 'cookie'], 'redis', 'factory');
+        $invalidConfigValueException = InvalidConfigValueException::forAllowedValues('driver', ['bearer', 'cookie'], 'redis', 'factory');
 
         self::assertSame(
             'Configuration value "driver" required by factory must be one of "bearer", "cookie"; "redis" given.',
-            $exception->getMessage(),
+            $invalidConfigValueException->getMessage(),
         );
     }
 }
