@@ -109,6 +109,7 @@ $config->requiredString('app.name');
 $config->nonEmptyString('app.name', default: 'demo');
 $config->requiredNonEmptyString('app.name');
 $config->optionalString('app.name');
+$config->optionalNonEmptyString('app.name');
 
 $config->bool('debug', default: false);
 $config->requiredBool('debug');
@@ -160,6 +161,30 @@ Valid scalar values must already have the expected type:
 ['port' => 8080];
 ```
 
+String readers trim leading and trailing whitespace from configured string values:
+
+```php
+['app' => ['name' => ' api ']]; // returned as 'api'
+```
+
+This applies to string values, non-empty strings, string lists, string enums, and PHP enum case names/string-backed values. Trimming is normalization of strings only; scalar coercion is still not performed.
+
+`optionalNonEmptyString()` is useful for optional values where an empty string should be treated as not configured:
+
+```php
+$config->optionalNonEmptyString('cookie.domain');
+```
+
+Behavior:
+
+```php
+[];                              // null
+['cookie' => ['domain' => '']];  // null
+['cookie' => ['domain' => '   ']]; // null
+['cookie' => ['domain' => ' example.com ']]; // 'example.com'
+['cookie' => ['domain' => 123]]; // invalid
+```
+
 `list()` requires a sequential list array:
 
 ```php
@@ -196,7 +221,7 @@ Accepted configured values:
 ```php
 ['logging' => ['level' => LogLevel::Debug]]; // enum instance
 ['logging' => ['level' => 'Debug']];         // case name
-['logging' => ['level' => 'debug']];         // case name, case-insensitive
+['logging' => ['level' => ' debug ']];       // trimmed case name, case-insensitive
 ['logging' => ['level' => 100]];             // backed value for int-backed enum
 ```
 

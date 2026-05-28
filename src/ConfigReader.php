@@ -22,6 +22,7 @@ use function is_int;
 use function is_string;
 use function is_subclass_of;
 use function strcasecmp;
+use function trim;
 
 final readonly class ConfigReader
 {
@@ -111,6 +112,23 @@ final readonly class ConfigReader
         }
 
         return $this->assertString($path, $value);
+    }
+
+    public function optionalNonEmptyString(string $path): ?string
+    {
+        [$exists, $value] = $this->find($path);
+
+        if (! $exists) {
+            return null;
+        }
+
+        $value = $this->assertString($path, $value);
+
+        if ('' === $value) {
+            return null;
+        }
+
+        return $value;
     }
 
     public function bool(string $path, bool $default): bool
@@ -380,8 +398,12 @@ final readonly class ConfigReader
             return null;
         }
 
-        if ('string' === $backingType && ! is_string($value)) {
-            return null;
+        if ('string' === $backingType) {
+            if (! is_string($value)) {
+                return null;
+            }
+
+            $value = trim($value);
         }
 
         // @var class-string<T&BackedEnum> $enumClass
@@ -400,6 +422,8 @@ final readonly class ConfigReader
         if (! is_string($value)) {
             return null;
         }
+
+        $value = trim($value);
 
         foreach ($enumClass::cases() as $case) {
             if ($case->name === $value) {
@@ -462,9 +486,12 @@ final readonly class ConfigReader
             throw InvalidConfigValueException::forType($path, 'string', $value, $this->context);
         }
 
-        return $value;
+        return trim($value);
     }
 
+    /**
+     * @return non-empty-string
+     */
     private function assertNonEmptyString(string $path, mixed $value): string
     {
         $value = $this->assertString($path, $value);
@@ -529,7 +556,7 @@ final readonly class ConfigReader
         $value = $this->assertList($path, $value);
 
         foreach ($value as $index => $item) {
-            $this->assertString("{$path}.{$index}", $item);
+            $value[$index] = $this->assertString("{$path}.{$index}", $item);
         }
 
         // @var list<string> $value
@@ -544,7 +571,7 @@ final readonly class ConfigReader
         $value = $this->assertList($path, $value);
 
         foreach ($value as $index => $item) {
-            $this->assertNonEmptyString("{$path}.{$index}", $item);
+            $value[$index] = $this->assertNonEmptyString("{$path}.{$index}", $item);
         }
 
         // @var list<non-empty-string> $value
