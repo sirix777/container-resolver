@@ -6,6 +6,12 @@ The format is based on Keep a Changelog.
 
 This package is pre-stable. Until the first stable release, public contracts and behavior may change between releases, and Semantic Versioning guarantees are not applied.
 
+## [0.1.2] - 2026-05-29
+
+### Changed
+- Documented public method failure modes with `@throws` annotations.
+- Documented that non-`NotFoundExceptionInterface` container resolution failures are propagated unchanged.
+
 ## [0.1.1] - 2026-05-28
 
 ### Added

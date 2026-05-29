@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Sirix\ContainerResolver;
 
 use BackedEnum;
+use Psr\Container\ContainerExceptionInterface;
 use ReflectionEnum;
 use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
+use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\ContainerResolver\Exception\MissingConfigValueException;
+use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
 use UnitEnum;
 
 use function array_is_list;
@@ -39,6 +42,11 @@ final readonly class ConfigReader
         return new self($config, $context);
     }
 
+    /**
+     * @throws MissingContainerServiceException when the container reports the config service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException when the config service exists but is not an array
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the config service
+     */
     public static function fromContainer(ContainerResolver $containerResolver, string $serviceId = 'config'): self
     {
         return new self($containerResolver->optionalArray($serviceId), $containerResolver->context());
@@ -60,6 +68,9 @@ final readonly class ConfigReader
         return $value;
     }
 
+    /**
+     * @throws MissingConfigValueException when the config path is not defined
+     */
     public function required(string $path): mixed
     {
         [$exists, $value] = $this->find($path);
@@ -71,6 +82,9 @@ final readonly class ConfigReader
         return $value;
     }
 
+    /**
+     * @throws InvalidConfigValueException when the config path exists but is not a string
+     */
     public function string(string $path, string $default): string
     {
         [$exists, $value] = $this->find($path);
@@ -82,11 +96,18 @@ final readonly class ConfigReader
         return $this->assertString($path, $value);
     }
 
+    /**
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a string
+     */
     public function requiredString(string $path): string
     {
         return $this->assertString($path, $this->required($path));
     }
 
+    /**
+     * @throws InvalidConfigValueException when the config path exists but is not a non-empty string
+     */
     public function nonEmptyString(string $path, string $default): string
     {
         [$exists, $value] = $this->find($path);
@@ -98,11 +119,18 @@ final readonly class ConfigReader
         return $this->assertNonEmptyString($path, $value);
     }
 
+    /**
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a non-empty string
+     */
     public function requiredNonEmptyString(string $path): string
     {
         return $this->assertNonEmptyString($path, $this->required($path));
     }
 
+    /**
+     * @throws InvalidConfigValueException when the config path exists but is not a string
+     */
     public function optionalString(string $path): ?string
     {
         [$exists, $value] = $this->find($path);
@@ -114,6 +142,9 @@ final readonly class ConfigReader
         return $this->assertString($path, $value);
     }
 
+    /**
+     * @throws InvalidConfigValueException when the config path exists but is not a string
+     */
     public function optionalNonEmptyString(string $path): ?string
     {
         [$exists, $value] = $this->find($path);
@@ -131,6 +162,9 @@ final readonly class ConfigReader
         return $value;
     }
 
+    /**
+     * @throws InvalidConfigValueException when the config path exists but is not a bool
+     */
     public function bool(string $path, bool $default): bool
     {
         [$exists, $value] = $this->find($path);
@@ -142,11 +176,18 @@ final readonly class ConfigReader
         return $this->assertBool($path, $value);
     }
 
+    /**
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a bool
+     */
     public function requiredBool(string $path): bool
     {
         return $this->assertBool($path, $this->required($path));
     }
 
+    /**
+     * @throws InvalidConfigValueException when the config path exists but is not an int
+     */
     public function int(string $path, int $default): int
     {
         [$exists, $value] = $this->find($path);
@@ -158,6 +199,10 @@ final readonly class ConfigReader
         return $this->assertInt($path, $value);
     }
 
+    /**
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not an int
+     */
     public function requiredInt(string $path): int
     {
         return $this->assertInt($path, $this->required($path));
@@ -167,6 +212,8 @@ final readonly class ConfigReader
      * @param array<mixed> $default
      *
      * @return array<mixed>
+     *
+     * @throws InvalidConfigValueException when the config path exists but is not an array
      */
     public function array(string $path, array $default): array
     {
@@ -181,6 +228,9 @@ final readonly class ConfigReader
 
     /**
      * @return array<mixed>
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not an array
      */
     public function requiredArray(string $path): array
     {
@@ -191,6 +241,8 @@ final readonly class ConfigReader
      * @param list<mixed> $default
      *
      * @return list<mixed>
+     *
+     * @throws InvalidConfigValueException when the config path exists but is not a list
      */
     public function list(string $path, array $default): array
     {
@@ -205,6 +257,9 @@ final readonly class ConfigReader
 
     /**
      * @return list<mixed>
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a list
      */
     public function requiredList(string $path): array
     {
@@ -215,6 +270,8 @@ final readonly class ConfigReader
      * @param list<string> $default
      *
      * @return list<string>
+     *
+     * @throws InvalidConfigValueException when the config path exists but is not a list of strings
      */
     public function stringList(string $path, array $default): array
     {
@@ -229,6 +286,9 @@ final readonly class ConfigReader
 
     /**
      * @return list<string>
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a list of strings
      */
     public function requiredStringList(string $path): array
     {
@@ -239,6 +299,8 @@ final readonly class ConfigReader
      * @param list<non-empty-string> $default
      *
      * @return list<non-empty-string>
+     *
+     * @throws InvalidConfigValueException when the config path exists but is not a list of non-empty strings
      */
     public function nonEmptyStringList(string $path, array $default): array
     {
@@ -253,6 +315,9 @@ final readonly class ConfigReader
 
     /**
      * @return list<non-empty-string>
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a list of non-empty strings
      */
     public function requiredNonEmptyStringList(string $path): array
     {
@@ -263,6 +328,8 @@ final readonly class ConfigReader
      * @param array<string, mixed> $default
      *
      * @return array<string, mixed>
+     *
+     * @throws InvalidConfigValueException when the config path exists but is not a string-keyed map
      */
     public function map(string $path, array $default): array
     {
@@ -277,6 +344,9 @@ final readonly class ConfigReader
 
     /**
      * @return array<string, mixed>
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not a string-keyed map
      */
     public function requiredMap(string $path): array
     {
@@ -290,6 +360,8 @@ final readonly class ConfigReader
      * @param T               $unitEnum
      *
      * @return T
+     *
+     * @throws InvalidConfigValueException when the config path exists but cannot be resolved to the requested enum
      */
     public function enum(string $path, string $enumClass, UnitEnum $unitEnum): UnitEnum
     {
@@ -308,6 +380,9 @@ final readonly class ConfigReader
      * @param class-string<T> $enumClass
      *
      * @return T
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but cannot be resolved to the requested enum
      */
     public function requiredEnum(string $path, string $enumClass): UnitEnum
     {
@@ -316,6 +391,8 @@ final readonly class ConfigReader
 
     /**
      * @param non-empty-list<string> $allowed
+     *
+     * @throws InvalidConfigValueException when the config path exists but is not one of the allowed strings
      */
     public function stringEnum(string $path, array $allowed, string $default): string
     {
@@ -336,6 +413,9 @@ final readonly class ConfigReader
 
     /**
      * @param non-empty-list<string> $allowed
+     *
+     * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidConfigValueException when the config path exists but is not one of the allowed strings
      */
     public function requiredStringEnum(string $path, array $allowed): string
     {

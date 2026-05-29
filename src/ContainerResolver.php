@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\ContainerResolver;
 
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
@@ -39,6 +40,10 @@ final readonly class ContainerResolver
      * @param class-string<T> $serviceId
      *
      * @return T
+     *
+     * @throws MissingContainerServiceException when the service is not registered
+     * @throws InvalidContainerServiceException when the service does not match the requested class or interface
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
      */
     public function get(string $serviceId): object
     {
@@ -51,6 +56,10 @@ final readonly class ContainerResolver
      * @param class-string<T> $expectedType
      *
      * @return T
+     *
+     * @throws MissingContainerServiceException when the service is not registered
+     * @throws InvalidContainerServiceException when the service does not match the expected type
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
      */
     public function getAs(string $serviceId, string $expectedType): object
     {
@@ -68,6 +77,10 @@ final readonly class ContainerResolver
         return $service;
     }
 
+    /**
+     * @throws MissingContainerServiceException when the service is not registered
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     */
     public function getExisting(string $serviceId): mixed
     {
         if (! $this->has($serviceId)) {
@@ -90,6 +103,10 @@ final readonly class ContainerResolver
         return $this->container->has($serviceId);
     }
 
+    /**
+     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     */
     public function optional(string $serviceId, mixed $default = null): mixed
     {
         if (! $this->has($serviceId)) {
@@ -101,6 +118,10 @@ final readonly class ContainerResolver
 
     /**
      * @return array<string, mixed>
+     *
+     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException when the service exists but is not an array
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
      */
     public function optionalArray(string $serviceId = 'config'): array
     {

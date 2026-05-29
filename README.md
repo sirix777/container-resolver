@@ -318,6 +318,16 @@ Sirix\ContainerResolver\Exception\InvalidConfigValueException
 `MissingContainerServiceException` implements `Psr\Container\NotFoundExceptionInterface`.
 `InvalidContainerServiceException` implements `Psr\Container\ContainerExceptionInterface`.
 
+`ContainerResolver` wraps missing-service and invalid-type failures into package exceptions. Other container resolution failures from the underlying PSR-11 container are propagated unchanged.
+
+That means:
+
+- missing service or `NotFoundExceptionInterface` from the container becomes `MissingContainerServiceException`;
+- wrong resolved service type becomes `InvalidContainerServiceException`;
+- other `ContainerExceptionInterface` failures from the container remain the original container exception.
+
+Public methods document their expected failure modes with `@throws` annotations.
+
 Consumers can catch and wrap package exceptions:
 
 ```php
