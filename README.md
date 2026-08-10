@@ -1,5 +1,7 @@
 # Container Resolver
 
+[![Latest Stable Version](http://poser.pugx.org/sirix/container-resolver/v)](https://packagist.org/packages/sirix/container-resolver) [![Total Downloads](http://poser.pugx.org/sirix/container-resolver/downloads)](https://packagist.org/packages/sirix/container-resolver) [![Latest Unstable Version](http://poser.pugx.org/sirix/container-resolver/v/unstable)](https://packagist.org/packages/sirix/container-resolver) [![License](http://poser.pugx.org/sirix/container-resolver/license)](https://packagist.org/packages/sirix/container-resolver) [![PHP Version Require](http://poser.pugx.org/sirix/container-resolver/require/php)](https://packagist.org/packages/sirix/container-resolver)
+
 Strict PSR-11 container service resolver and typed configuration reader for reusable PHP packages.
 
 ## Stability and requirements
