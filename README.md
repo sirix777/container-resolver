@@ -4,7 +4,7 @@ Strict PSR-11 container service resolver and typed configuration reader for reus
 
 ## Stability and requirements
 
-`1.0.0` is the first stable release. It supports PHP `^8.2` and `psr/container` 1.x or 2.x. Public contracts follow Semantic Versioning; see [UPGRADE.md](UPGRADE.md) when moving from 0.1.x.
+`0.2.0` is a pre-release. It supports PHP `^8.2` and `psr/container` 1.x or 2.x. Public contracts may change before the first stable release;
 
 ## Installation
 
