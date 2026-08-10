@@ -17,7 +17,7 @@ final class MissingContainerServiceExceptionTest extends TestCase
 {
     public function testForServiceCreatesNotFoundExceptionWithPreviousException(): void
     {
-        $runtimeException = new RuntimeException('previous');
+        $runtimeException                 = new RuntimeException('previous');
         $missingContainerServiceException = MissingContainerServiceException::forService('config', 'factory', $runtimeException);
 
         self::assertInstanceOf(NotFoundExceptionInterface::class, $missingContainerServiceException);

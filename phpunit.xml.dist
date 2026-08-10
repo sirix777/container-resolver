@@ -23,4 +23,8 @@
             <directory suffix=".php">src</directory>
         </include>
     </source>
+
+    <coverage includeUncoveredFiles="true" />
+
+    <!-- The CI coverage job writes a Clover report from this source scope and enforces 100% statement coverage. -->
 </phpunit>

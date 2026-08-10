@@ -11,6 +11,7 @@ use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
 
 use function is_array;
+use function is_string;
 
 final readonly class ContainerResolver
 {
@@ -83,19 +84,13 @@ final readonly class ContainerResolver
      */
     public function getExisting(string $serviceId): mixed
     {
-        if (! $this->has($serviceId)) {
+        [$exists, $service] = $this->findExisting($serviceId);
+
+        if (! $exists) {
             throw MissingContainerServiceException::forService($serviceId, $this->context);
         }
 
-        try {
-            return $this->container->get($serviceId);
-        } catch (NotFoundExceptionInterface $exception) {
-            throw MissingContainerServiceException::forService(
-                $serviceId,
-                $this->context,
-                $exception,
-            );
-        }
+        return $service;
     }
 
     public function has(string $serviceId): bool
@@ -104,20 +99,65 @@ final readonly class ContainerResolver
     }
 
     /**
+     * @template T of object
+     *
+     * @param class-string<T> $serviceId
+     *
+     * @return null|T
+     *
      * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException when the service exists but does not match the requested class or interface
      * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
      */
-    public function optional(string $serviceId, mixed $default = null): mixed
+    public function optional(string $serviceId): ?object
     {
-        if (! $this->has($serviceId)) {
-            return $default;
-        }
-
-        return $this->getExisting($serviceId);
+        return $this->optionalAs($serviceId, $serviceId);
     }
 
     /**
-     * @return array<string, mixed>
+     * @template T of object
+     *
+     * @param class-string<T> $expectedType
+     *
+     * @return null|T
+     *
+     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException when the service exists but does not match the expected type
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     */
+    public function optionalAs(string $serviceId, string $expectedType): ?object
+    {
+        [$exists, $service] = $this->findExisting($serviceId);
+
+        if (! $exists) {
+            return null;
+        }
+
+        if (! $service instanceof $expectedType) {
+            throw InvalidContainerServiceException::forType(
+                $serviceId,
+                $expectedType,
+                $service,
+                $this->context,
+            );
+        }
+
+        return $service;
+    }
+
+    /**
+     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     */
+    public function optionalExisting(string $serviceId, mixed $default = null): mixed
+    {
+        [$exists, $service] = $this->findExisting($serviceId);
+
+        return $exists ? $service : $default;
+    }
+
+    /**
+     * @return array<mixed>
      *
      * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
      * @throws InvalidContainerServiceException when the service exists but is not an array
@@ -125,11 +165,11 @@ final readonly class ContainerResolver
      */
     public function optionalArray(string $serviceId = 'config'): array
     {
-        if (! $this->has($serviceId)) {
+        [$exists, $service] = $this->findExisting($serviceId);
+
+        if (! $exists) {
             return [];
         }
-
-        $service = $this->getExisting($serviceId);
 
         if (! is_array($service)) {
             throw InvalidContainerServiceException::forType(
@@ -140,7 +180,55 @@ final readonly class ContainerResolver
             );
         }
 
-        // @var array<string, mixed> $service
         return $service;
+    }
+
+    /**
+     * @return array<string, mixed>
+     *
+     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException when the service exists but is not a string-keyed array
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     */
+    public function optionalMap(string $serviceId = 'config'): array
+    {
+        $service = $this->optionalArray($serviceId);
+
+        foreach ($service as $key => $_) {
+            if (! is_string($key)) {
+                throw InvalidContainerServiceException::forType(
+                    $serviceId,
+                    'array with string keys',
+                    $service,
+                    $this->context,
+                );
+            }
+        }
+
+        /** @var array<string, mixed> $service */
+        return $service;
+    }
+
+    /**
+     * @return array{0: bool, 1: mixed}
+     *
+     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
+     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     */
+    private function findExisting(string $serviceId): array
+    {
+        if (! $this->has($serviceId)) {
+            return [false, null];
+        }
+
+        try {
+            return [true, $this->container->get($serviceId)];
+        } catch (NotFoundExceptionInterface $exception) {
+            throw MissingContainerServiceException::forService(
+                $serviceId,
+                $this->context,
+                $exception,
+            );
+        }
     }
 }

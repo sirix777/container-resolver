@@ -34,6 +34,16 @@
             "SirixTest\\ContainerResolver\\": "test/"
         }
     },
+    "archive": {
+        "exclude": [
+            "/.github/",
+            "/.php-cs-fixer.cache",
+            "/.phpunit.cache/",
+            "/build/",
+            "/composer.lock",
+            "/vendor/"
+        ]
+    },
     "config": {
         "allow-plugins": {
             "bamarni/composer-bin-plugin": true
@@ -56,14 +66,21 @@
             "@cs-check",
             "@rector",
             "@phpstan",
-            "@test"
+            "@test",
+            "@normalize"
         ],
+        "coverage-check": "php -r '$coverage = simplexml_load_file(\"build/coverage/clover.xml\"); if (false === $coverage) { fwrite(STDERR, \"Coverage report is unreadable.\\n\"); exit(1); } $metrics = $coverage->project->metrics; $statements = (int) $metrics[\"statements\"]; $covered = (int) $metrics[\"coveredstatements\"]; if (0 === $statements || $covered !== $statements) { fwrite(STDERR, sprintf(\"Source line coverage must be 100%%; got %d/%d statements.\\n\", $covered, $statements)); exit(1); }'",
         "cs-check": "php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run -vvv --diff",
         "cs-fix": "php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix -vvv",
         "normalize": "@composer bin composer-normalize normalize --diff ../../composer.json",
         "phpstan": "php tools/phpstan/vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=2G",
         "rector": "php tools/rector/vendor/bin/rector process --dry-run --memory-limit=2G",
         "rector-fix": "php tools/rector/vendor/bin/rector process --memory-limit=2G",
-        "test": "php vendor/bin/phpunit --colors=always --testdox"
+        "test": "php vendor/bin/phpunit --colors=always --testdox",
+        "test-coverage": [
+            "php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
+            "php -d xdebug.mode=coverage vendor/bin/phpunit --colors=always --testdox --coverage-clover build/coverage/clover.xml",
+            "@coverage-check"
+        ]
     }
 }

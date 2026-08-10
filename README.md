@@ -2,13 +2,9 @@
 
 Strict PSR-11 container service resolver and typed configuration reader for reusable PHP packages.
 
-## Stability
+## Stability and requirements
 
-This package is currently pre-stable.
-
-Until the first stable release, public contracts and behavior may change between releases based on real usage in Sirix packages. Semantic Versioning guarantees are not applied during this early iteration phase.
-
-Use exact version constraints or review changelogs carefully when upgrading pre-stable versions.
+`1.0.0` is the first stable release. It supports PHP `^8.2` and `psr/container` 1.x or 2.x. Public contracts follow Semantic Versioning; see [UPGRADE.md](UPGRADE.md) when moving from 0.1.x.
 
 ## Installation
 
@@ -65,19 +61,27 @@ Use `getExisting()` when you want the raw service value and will validate it you
 $value = $resolver->getExisting('config');
 ```
 
-Use `optional()` for optional services:
+`optional()` is the typed optional counterpart to `get()`: the service id must be a class or interface name. It returns `null` only when the service is absent; a present service with the wrong type throws `InvalidContainerServiceException`.
 
 ```php
 $logger = $resolver->optional(LoggerInterface::class);
 ```
 
-Use `optionalArray()` for array services such as `config`:
+Use `optionalAs()` when the service id is custom but its expected type is known, and `optionalExisting()` only when intentionally handling an untyped raw service yourself:
 
 ```php
-$config = $resolver->optionalArray('config');
+$cache = $resolver->optionalAs('app.cache', CacheInterface::class);
+$value = $resolver->optionalExisting('app.feature-flags', default: []);
 ```
 
-If the service is missing, `optionalArray()` returns `[]`. If the service exists but is not an array, it throws `InvalidContainerServiceException`.
+`optionalArray()` accepts any PHP array, including lists. `optionalMap()` is stricter: it accepts only arrays whose keys are strings, which makes it appropriate for the root `config` service. Both return `[]` for a missing service and throw when a present service violates their contract.
+
+```php
+$items = $resolver->optionalArray('app.middleware');
+$config = $resolver->optionalMap('config');
+```
+
+`ConfigReader::fromContainer()` reads its root configuration through `optionalMap()`, so list-shaped root configuration is rejected.
 
 ## Typed configuration
 
@@ -139,7 +143,7 @@ $config->requiredStringEnum('driver', ['bearer', 'cookie']);
 
 ## Strictness rules
 
-Missing optional values return the supplied default:
+Missing optional values return the supplied default, after the default has been validated for the reader's declared contract:
 
 ```php
 $config->string('app.name', default: 'demo');
@@ -167,7 +171,13 @@ String readers trim leading and trailing whitespace from configured string value
 ['app' => ['name' => ' api ']]; // returned as 'api'
 ```
 
-This applies to string values, non-empty strings, string lists, string enums, and PHP enum case names/string-backed values. Trimming is normalization of strings only; scalar coercion is still not performed.
+This applies to configured string values, string lists, string enums, and PHP enum case names/string-backed values. String defaults are normalized and validated by the same reader contract, so a blank default is not accepted where a non-empty string is required. Trimming is normalization of strings only; scalar coercion is never performed.
+
+### Paths and `null`
+
+Paths use dot-separated segments such as `app.name`. A path cannot be empty and cannot contain an empty segment (`app..name`). Dots are not escapable, so a configuration key containing `.` cannot be addressed as one key. Numeric list indexes can be addressed as segments (`servers.0.host`).
+
+`null` is an existing value, not a missing path. `has('app.name')` is therefore `true` for `['app' => ['name' => null]]`, and `get()` returns `null`; typed readers reject it with `InvalidConfigValueException`. A `null` at an intermediate path makes a deeper path absent.
 
 `optionalNonEmptyString()` is useful for optional values where an empty string should be treated as not configured:
 
@@ -199,7 +209,7 @@ $entities = $config->nonEmptyStringList('entities', default: []);
 
 `entities` may be absent; in that case the default `[]` is returned. If `entities` exists, it must be a list of non-empty strings.
 
-`enum()` returns real PHP enum instances:
+`enum()` returns real PHP enum instances. Its `default:` must be an instance of the requested enum class:
 
 ```php
 enum LogLevel: int
@@ -224,6 +234,8 @@ Accepted configured values:
 ['logging' => ['level' => ' debug ']];       // trimmed case name, case-insensitive
 ['logging' => ['level' => 100]];             // backed value for int-backed enum
 ```
+
+For backed enums, a matching backed value is resolved before a case name. Case names are trimmed and matched case-insensitively. String-backed values are trimmed; int-backed values must be integers.
 
 Numeric strings are not coerced for int-backed enums:
 
@@ -320,6 +332,8 @@ Sirix\ContainerResolver\Exception\InvalidConfigValueException
 
 `ContainerResolver` wraps missing-service and invalid-type failures into package exceptions. Other container resolution failures from the underlying PSR-11 container are propagated unchanged.
 
+Diagnostic messages identify configuration paths, expected contracts, and actual types, but never include raw configured values. This keeps error reporting safe for configuration that may contain credentials or other secrets.
+
 That means:
 
 - missing service or `NotFoundExceptionInterface` from the container becomes `MissingContainerServiceException`;
@@ -404,4 +418,3 @@ This package intentionally does not provide:
 - secret resolution;
 - runtime caching;
 - scalar coercion.
-

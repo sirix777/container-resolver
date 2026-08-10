@@ -2,9 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on Keep a Changelog.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to Semantic Versioning.
 
-This package is pre-stable. Until the first stable release, public contracts and behavior may change between releases, and Semantic Versioning guarantees are not applied.
+## [0.2.0] - 2026-08-10
+
+### Added
+- Strict optional service APIs: `optional()`, `optionalAs()`, and `optionalExisting()`.
+- Distinct `optionalArray()` and `optionalMap()` APIs for arbitrary arrays and string-keyed configuration maps.
+- Validation of reader defaults and enum schemas, ensuring default values always satisfy the declared return contract.
+- Stable dot-path validation and documented `null` semantics.
+- `UPGRADE.md` and `SECURITY.md`.
+- CI validation across PHP 8.2–8.5 and `psr/container` 1.x and 2.x.
+- A CI-enforced 100% statement-coverage threshold for `src`.
+
+### Changed
+- This pre-1.0 release supports PHP `^8.2` with `psr/container` 1.x or 2.x.
+- PHPStan runs at its maximum level.
+- Configured string values, string-list items, string enum values, and string-backed enum values are trimmed before validation.
+- PHP enum case names are resolved case-insensitively after trimming; backed values take precedence over case names.
+
+### Breaking changes
+- `ContainerResolver::optional(string $serviceId, mixed $default = null)` has been replaced. `optional()` is now typed and returns `null` for a missing service; use `optionalAs()` for a custom id or `optionalExisting()` for raw values and a fallback.
+- `optionalArray()` now represents any PHP array. Use `optionalMap()` for a string-keyed configuration map; `ConfigReader::fromContainer()` requires that map shape.
+- Invalid defaults and invalid enum allowed-value lists now fail immediately instead of being returned when the configuration path is absent.
+- Empty paths and paths with empty segments are rejected. A configured `null` is no longer treated as absent by typed readers.
 
 ## [0.1.2] - 2026-05-29
 

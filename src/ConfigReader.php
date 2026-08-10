@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sirix\ContainerResolver;
 
 use BackedEnum;
+use InvalidArgumentException;
 use Psr\Container\ContainerExceptionInterface;
 use ReflectionEnum;
 use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
@@ -15,7 +16,6 @@ use UnitEnum;
 
 use function array_is_list;
 use function array_key_exists;
-use function array_keys;
 use function enum_exists;
 use function explode;
 use function in_array;
@@ -31,11 +31,18 @@ final readonly class ConfigReader
 {
     /**
      * @param array<string, mixed> $config
+     *
+     * @throws InvalidArgumentException when the root configuration is not a string-keyed map
      */
-    public function __construct(private array $config, private ?string $context = null) {}
+    public function __construct(private array $config, private ?string $context = null)
+    {
+        $this->assertMapDefault($config, 'The configuration root');
+    }
 
     /**
      * @param array<string, mixed> $config
+     *
+     * @throws InvalidArgumentException when the root configuration is not a string-keyed map
      */
     public static function fromArray(array $config, ?string $context = null): self
     {
@@ -49,14 +56,20 @@ final readonly class ConfigReader
      */
     public static function fromContainer(ContainerResolver $containerResolver, string $serviceId = 'config'): self
     {
-        return new self($containerResolver->optionalArray($serviceId), $containerResolver->context());
+        return new self($containerResolver->optionalMap($serviceId), $containerResolver->context());
     }
 
+    /**
+     * @throws InvalidArgumentException when the path is blank or contains an empty segment
+     */
     public function has(string $path): bool
     {
         return $this->find($path)[0];
     }
 
+    /**
+     * @throws InvalidArgumentException when the path is blank or contains an empty segment
+     */
     public function get(string $path, mixed $default = null): mixed
     {
         [$exists, $value] = $this->find($path);
@@ -70,6 +83,7 @@ final readonly class ConfigReader
 
     /**
      * @throws MissingConfigValueException when the config path is not defined
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function required(string $path): mixed
     {
@@ -84,9 +98,11 @@ final readonly class ConfigReader
 
     /**
      * @throws InvalidConfigValueException when the config path exists but is not a string
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function string(string $path, string $default): string
     {
+        $default          = trim($default);
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -99,6 +115,7 @@ final readonly class ConfigReader
     /**
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a string
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredString(string $path): string
     {
@@ -107,9 +124,11 @@ final readonly class ConfigReader
 
     /**
      * @throws InvalidConfigValueException when the config path exists but is not a non-empty string
+     * @throws InvalidArgumentException    when the default is blank or the path is invalid
      */
     public function nonEmptyString(string $path, string $default): string
     {
+        $default          = $this->assertNonEmptyStringDefault($default);
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -122,6 +141,7 @@ final readonly class ConfigReader
     /**
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a non-empty string
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredNonEmptyString(string $path): string
     {
@@ -130,6 +150,7 @@ final readonly class ConfigReader
 
     /**
      * @throws InvalidConfigValueException when the config path exists but is not a string
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function optionalString(string $path): ?string
     {
@@ -144,6 +165,7 @@ final readonly class ConfigReader
 
     /**
      * @throws InvalidConfigValueException when the config path exists but is not a string
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function optionalNonEmptyString(string $path): ?string
     {
@@ -164,6 +186,7 @@ final readonly class ConfigReader
 
     /**
      * @throws InvalidConfigValueException when the config path exists but is not a bool
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function bool(string $path, bool $default): bool
     {
@@ -179,6 +202,7 @@ final readonly class ConfigReader
     /**
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a bool
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredBool(string $path): bool
     {
@@ -187,6 +211,7 @@ final readonly class ConfigReader
 
     /**
      * @throws InvalidConfigValueException when the config path exists but is not an int
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function int(string $path, int $default): int
     {
@@ -202,6 +227,7 @@ final readonly class ConfigReader
     /**
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not an int
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredInt(string $path): int
     {
@@ -214,6 +240,7 @@ final readonly class ConfigReader
      * @return array<mixed>
      *
      * @throws InvalidConfigValueException when the config path exists but is not an array
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function array(string $path, array $default): array
     {
@@ -231,6 +258,7 @@ final readonly class ConfigReader
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not an array
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredArray(string $path): array
     {
@@ -238,14 +266,16 @@ final readonly class ConfigReader
     }
 
     /**
-     * @param list<mixed> $default
+     * @param array<mixed> $default
      *
      * @return list<mixed>
      *
      * @throws InvalidConfigValueException when the config path exists but is not a list
+     * @throws InvalidArgumentException    when the default is not a list or the path is invalid
      */
     public function list(string $path, array $default): array
     {
+        $default          = $this->assertListDefault($default);
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -260,6 +290,7 @@ final readonly class ConfigReader
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a list
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredList(string $path): array
     {
@@ -267,14 +298,16 @@ final readonly class ConfigReader
     }
 
     /**
-     * @param list<string> $default
+     * @param array<mixed> $default
      *
      * @return list<string>
      *
      * @throws InvalidConfigValueException when the config path exists but is not a list of strings
+     * @throws InvalidArgumentException    when the default is invalid or the path is invalid
      */
     public function stringList(string $path, array $default): array
     {
+        $default          = $this->assertStringListDefault($default);
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -289,6 +322,7 @@ final readonly class ConfigReader
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a list of strings
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredStringList(string $path): array
     {
@@ -296,14 +330,16 @@ final readonly class ConfigReader
     }
 
     /**
-     * @param list<non-empty-string> $default
+     * @param array<mixed> $default
      *
      * @return list<non-empty-string>
      *
      * @throws InvalidConfigValueException when the config path exists but is not a list of non-empty strings
+     * @throws InvalidArgumentException    when the default is invalid or the path is invalid
      */
     public function nonEmptyStringList(string $path, array $default): array
     {
+        $default          = $this->assertNonEmptyStringListDefault($default);
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -318,6 +354,7 @@ final readonly class ConfigReader
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a list of non-empty strings
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredNonEmptyStringList(string $path): array
     {
@@ -325,14 +362,16 @@ final readonly class ConfigReader
     }
 
     /**
-     * @param array<string, mixed> $default
+     * @param array<mixed> $default
      *
      * @return array<string, mixed>
      *
      * @throws InvalidConfigValueException when the config path exists but is not a string-keyed map
+     * @throws InvalidArgumentException    when the default is not a map or the path is invalid
      */
     public function map(string $path, array $default): array
     {
+        $default          = $this->assertMapDefault($default, 'The default value');
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -347,6 +386,7 @@ final readonly class ConfigReader
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not a string-keyed map
+     * @throws InvalidArgumentException    when the path is blank or contains an empty segment
      */
     public function requiredMap(string $path): array
     {
@@ -357,18 +397,25 @@ final readonly class ConfigReader
      * @template T of UnitEnum
      *
      * @param class-string<T> $enumClass
-     * @param T               $unitEnum
+     * @param T               $default
      *
      * @return T
      *
      * @throws InvalidConfigValueException when the config path exists but cannot be resolved to the requested enum
+     * @throws InvalidArgumentException    when the enum class/default is invalid or the path is invalid
      */
-    public function enum(string $path, string $enumClass, UnitEnum $unitEnum): UnitEnum
+    public function enum(string $path, string $enumClass, UnitEnum $default): UnitEnum
     {
+        $this->assertEnumClass($enumClass);
+
+        if (! $default instanceof $enumClass) {
+            throw new InvalidArgumentException('The enum default must be an instance of the requested enum class.');
+        }
+
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
-            return $unitEnum;
+            return $default;
         }
 
         return $this->assertEnum($path, $enumClass, $value);
@@ -383,19 +430,30 @@ final readonly class ConfigReader
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but cannot be resolved to the requested enum
+     * @throws InvalidArgumentException    when the enum class or path is invalid
      */
     public function requiredEnum(string $path, string $enumClass): UnitEnum
     {
+        $this->assertEnumClass($enumClass);
+
         return $this->assertEnum($path, $enumClass, $this->required($path));
     }
 
     /**
-     * @param non-empty-list<string> $allowed
+     * @param array<mixed> $allowed
      *
      * @throws InvalidConfigValueException when the config path exists but is not one of the allowed strings
+     * @throws InvalidArgumentException    when the allowed values/default is invalid or the path is invalid
      */
     public function stringEnum(string $path, array $allowed, string $default): string
     {
+        $allowed = $this->assertAllowedValues($allowed);
+        $default = trim($default);
+
+        if (! in_array($default, $allowed, true)) {
+            throw new InvalidArgumentException('The string enum default must be one of the allowed values.');
+        }
+
         [$exists, $value] = $this->find($path);
 
         if (! $exists) {
@@ -412,14 +470,16 @@ final readonly class ConfigReader
     }
 
     /**
-     * @param non-empty-list<string> $allowed
+     * @param array<mixed> $allowed
      *
      * @throws MissingConfigValueException when the config path is not defined
      * @throws InvalidConfigValueException when the config path exists but is not one of the allowed strings
+     * @throws InvalidArgumentException    when the allowed values or path is invalid
      */
     public function requiredStringEnum(string $path, array $allowed): string
     {
-        $value = $this->assertString($path, $this->required($path));
+        $allowed = $this->assertAllowedValues($allowed);
+        $value   = $this->assertString($path, $this->required($path));
 
         if (! in_array($value, $allowed, true)) {
             throw InvalidConfigValueException::forAllowedValues($path, $allowed, $value, $this->context);
@@ -441,19 +501,17 @@ final readonly class ConfigReader
             return $value;
         }
 
-        if (enum_exists($enumClass)) {
-            $enum = $this->enumFromBackedValue($enumClass, $value)
-                ?? $this->enumFromCaseName($enumClass, $value);
+        $enum = $this->enumFromBackedValue($enumClass, $value)
+            ?? $this->enumFromCaseName($enumClass, $value);
 
-            if ($enum instanceof UnitEnum) {
-                return $enum;
-            }
+        if ($enum instanceof UnitEnum) {
+            return $enum;
+        }
 
-            $allowed = $this->enumAllowedValues($enumClass);
-            if ([] !== $allowed) {
-                // @var non-empty-list<string> $allowed
-                throw InvalidConfigValueException::forAllowedValues($path, $allowed, $value, $this->context);
-            }
+        $allowed = $this->enumAllowedValues($enumClass);
+        if ([] !== $allowed) {
+            // @var non-empty-list<string> $allowed
+            throw InvalidConfigValueException::forAllowedValues($path, $allowed, $value, $this->context);
         }
 
         throw InvalidConfigValueException::forType($path, $enumClass, $value, $this->context);
@@ -474,16 +532,17 @@ final readonly class ConfigReader
 
         $backingType = (new ReflectionEnum($enumClass))->getBackingType()?->getName();
 
-        if ('int' === $backingType && ! is_int($value)) {
-            return null;
-        }
-
         if ('string' === $backingType) {
             if (! is_string($value)) {
                 return null;
             }
 
-            $value = trim($value);
+            // @var class-string<T&BackedEnum> $enumClass
+            return $enumClass::tryFrom(trim($value));
+        }
+
+        if ('int' !== $backingType || ! is_int($value)) {
+            return null;
         }
 
         // @var class-string<T&BackedEnum> $enumClass
@@ -532,10 +591,11 @@ final readonly class ConfigReader
         $allowed = [];
 
         foreach ($enumClass::cases() as $unitEnum) {
-            $allowed[] = $unitEnum->name;
+            $allowed[] = "case {$unitEnum->name}";
 
-            if ($unitEnum instanceof BackedEnum && is_string($unitEnum->value) && $unitEnum->value !== $unitEnum->name) {
-                $allowed[] = $unitEnum->value;
+            if ($unitEnum instanceof BackedEnum) {
+                $backedValue = is_string($unitEnum->value) ? $unitEnum->value : (string) $unitEnum->value;
+                $allowed[]   = "backed value {$backedValue}";
             }
         }
 
@@ -547,9 +607,17 @@ final readonly class ConfigReader
      */
     private function find(string $path): array
     {
+        if ('' === $path || '' === trim($path)) {
+            throw new InvalidArgumentException('The configuration path must not be blank.');
+        }
+
         $value = $this->config;
 
         foreach (explode('.', $path) as $segment) {
+            if ('' === $segment) {
+                throw new InvalidArgumentException('The configuration path must not contain empty segments.');
+            }
+
             if (! is_array($value) || ! array_key_exists($segment, $value)) {
                 return [false, null];
             }
@@ -665,13 +733,137 @@ final readonly class ConfigReader
     {
         $value = $this->assertArray($path, $value);
 
-        foreach (array_keys($value) as $key) {
+        $map = [];
+
+        foreach ($value as $key => $item) {
             if (! is_string($key)) {
                 throw InvalidConfigValueException::forType($path, 'map<string, mixed>', $value, $this->context);
             }
+
+            $map[$key] = $item;
         }
 
-        // @var array<string, mixed> $value
-        return $value;
+        return $map;
+    }
+
+    /**
+     * @param class-string<UnitEnum> $enumClass
+     */
+    private function assertEnumClass(string $enumClass): void
+    {
+        if (! enum_exists($enumClass)) {
+            throw new InvalidArgumentException('The enum class must name an existing enum.');
+        }
+    }
+
+    /**
+     * @param array<mixed> $default
+     *
+     * @return list<mixed>
+     */
+    private function assertListDefault(array $default): array
+    {
+        if (! array_is_list($default)) {
+            throw new InvalidArgumentException('The default value must be a list.');
+        }
+
+        return $default;
+    }
+
+    /**
+     * @param array<mixed> $default
+     *
+     * @return list<string>
+     */
+    private function assertStringListDefault(array $default): array
+    {
+        $default = $this->assertListDefault($default);
+
+        foreach ($default as $index => $item) {
+            if (! is_string($item)) {
+                throw new InvalidArgumentException("The string list default item at index {$index} must be a string.");
+            }
+
+            $default[$index] = trim($item);
+        }
+
+        // @var list<string> $default
+        return $default;
+    }
+
+    /**
+     * @param array<mixed> $default
+     *
+     * @return list<non-empty-string>
+     */
+    private function assertNonEmptyStringListDefault(array $default): array
+    {
+        $default = $this->assertStringListDefault($default);
+
+        foreach ($default as $item) {
+            if ('' === $item) {
+                throw new InvalidArgumentException('The non-empty string list default must not contain blank strings.');
+            }
+        }
+
+        // @var list<non-empty-string> $default
+        return $default;
+    }
+
+    /**
+     * @param array<mixed> $default
+     *
+     * @return array<string, mixed>
+     */
+    private function assertMapDefault(array $default, string $description): array
+    {
+        $map = [];
+
+        foreach ($default as $key => $value) {
+            if (! is_string($key)) {
+                throw new InvalidArgumentException("{$description} must be a string-keyed map.");
+            }
+
+            $map[$key] = $value;
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param array<mixed> $allowed
+     *
+     * @return non-empty-list<string>
+     */
+    private function assertAllowedValues(array $allowed): array
+    {
+        if ([] === $allowed || ! array_is_list($allowed)) {
+            throw new InvalidArgumentException('Allowed string enum values must be a non-empty list of strings.');
+        }
+
+        foreach ($allowed as $index => $value) {
+            if (! is_string($value)) {
+                throw new InvalidArgumentException("The allowed string enum value at index {$index} must be a string.");
+            }
+
+            $allowed[$index] = trim($value);
+        }
+
+        // @var non-empty-list<string> $allowed
+        return $allowed;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function assertNonEmptyStringDefault(string $default): string
+    {
+        $default = trim($default);
+
+        if ('' === $default) {
+            throw new InvalidArgumentException('The non-empty string default must not be blank.');
+        }
+
+        return $default;
     }
 }

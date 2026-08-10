@@ -8,3 +8,7 @@
 /.gitattributes export-ignore
 /.github/ export-ignore
 /composer-dependency-analyser.php export-ignore
+/build/ export-ignore
+/composer.lock export-ignore
+/vendor/ export-ignore
+/.gitignore export-ignore

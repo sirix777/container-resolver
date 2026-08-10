@@ -22,13 +22,19 @@ final class InvalidConfigValueExceptionTest extends TestCase
         self::assertSame('Configuration value "app.name" required by factory must be string; int given.', $invalidConfigValueException->getMessage());
     }
 
-    public function testForAllowedValuesIncludesStringActualValue(): void
+    public function testForAllowedValuesRedactsStringActualValue(): void
     {
-        $invalidConfigValueException = InvalidConfigValueException::forAllowedValues('driver', ['bearer', 'cookie'], 'redis', 'factory');
+        $invalidConfigValueException = InvalidConfigValueException::forAllowedValues(
+            'driver',
+            ['bearer', 'cookie'],
+            'super-secret-value',
+            'factory',
+        );
 
         self::assertSame(
-            'Configuration value "driver" required by factory must be one of "bearer", "cookie"; "redis" given.',
+            'Configuration value "driver" required by factory must be one of "bearer", "cookie"; string given.',
             $invalidConfigValueException->getMessage(),
         );
+        self::assertStringNotContainsString('super-secret-value', $invalidConfigValueException->getMessage());
     }
 }

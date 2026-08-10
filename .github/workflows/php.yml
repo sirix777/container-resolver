@@ -1,10 +1,12 @@
-name: PHP Composer
+name: PHP
 
 on:
     push:
         branches: ["main"]
+        tags: ["v*"]
     pull_request:
         branches: ["main"]
+    workflow_dispatch:
 
 permissions:
     contents: read
@@ -19,6 +21,7 @@ jobs:
             fail-fast: false
             matrix:
                 php-version: ["8.2", "8.3", "8.4", "8.5"]
+                psr-container: ["1.0.0", "^2.0"]
         steps:
             - uses: actions/checkout@v5
 
@@ -26,19 +29,54 @@ jobs:
               uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php-version }}
-                  coverage: none
+                  coverage: ${{ matrix.php-version == '8.5' && matrix.psr-container == '^2.0' && 'xdebug' || 'none' }}
 
             - name: Validate composer.json
               run: composer validate --strict --no-check-lock
 
-            - name: Install dependencies
-              run: composer install
+            - name: Resolve dependencies
+              run: composer update --prefer-dist --no-interaction --no-progress --with "psr/container:${{ matrix.psr-container }}"
 
-            - name: Run cs-check
-              run: composer cs-check
+            - name: Install Composer-bin tool dependencies
+              run: |
+                  for tool in tools/*; do
+                    composer install --working-dir="$tool" --prefer-dist --no-interaction --no-progress
+                  done
 
-            - name: Run phpstan
-              run: composer phpstan
+            - name: Audit dependencies
+              run: composer audit
 
-            - name: Run phpunit
-              run: composer test
+            - name: Run full QA
+              run: composer check
+
+            - name: Enforce source coverage
+              if: matrix.php-version == '8.5' && matrix.psr-container == '^2.0'
+              run: composer test-coverage
+
+            - name: Verify archive can be built
+              run: composer archive --format=tar --dir=build
+
+            - name: Verify archive contents
+              run: |
+                  archive="$(find build -maxdepth 1 -name '*.tar' -print -quit)"
+                  test -n "$archive"
+                  if tar -tf "$archive" | grep -E '/(vendor|build|test|tools)/|/(composer\.lock|\.gitignore)$'; then
+                    echo 'The release archive contains excluded development files.' >&2
+                    exit 1
+                  fi
+
+            - name: Install archive without development dependencies
+              run: |
+                  archive="$(find build -maxdepth 1 -name '*.tar' -print -quit)"
+                  test -n "$archive"
+                  archive_url="file://$archive"
+                  installation_directory="$(mktemp -d)"
+                  repository='{"type":"package","package":{"name":"sirix/container-resolver","version":"1.0.0","dist":{"url":"'"$archive_url"'","type":"tar"},"require":{"php":"^8.2","psr/container":"^1.0 || ^2.0"}}}'
+                  composer init --name=release/archive-check --no-interaction --working-dir="$installation_directory"
+                  composer config repositories.container-resolver "$repository" --working-dir="$installation_directory"
+                  composer require --no-install --no-interaction 'sirix/container-resolver:1.0.0' --working-dir="$installation_directory"
+                  composer install --no-dev --prefer-dist --no-interaction --no-progress --working-dir="$installation_directory"
+                  test -f "$installation_directory/vendor/autoload.php"
+
+            - name: Check whitespace errors
+              run: git diff --check

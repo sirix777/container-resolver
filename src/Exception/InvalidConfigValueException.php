@@ -9,7 +9,6 @@ use RuntimeException;
 use function array_map;
 use function get_debug_type;
 use function implode;
-use function is_string;
 use function sprintf;
 
 final class InvalidConfigValueException extends RuntimeException implements ConfigReaderException
@@ -69,10 +68,6 @@ final class InvalidConfigValueException extends RuntimeException implements Conf
 
     private static function actualValueForAllowedValues(mixed $actual): string
     {
-        if (is_string($actual)) {
-            return sprintf('"%s"', $actual);
-        }
-
         return self::actualType($actual);
     }
 }
