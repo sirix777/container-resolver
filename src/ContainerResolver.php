@@ -9,6 +9,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
+use Throwable;
 
 use function is_array;
 use function is_string;
@@ -42,9 +43,9 @@ final readonly class ContainerResolver
      *
      * @return T
      *
-     * @throws MissingContainerServiceException when the service is not registered
-     * @throws InvalidContainerServiceException when the service does not match the requested class or interface
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the service is not registered
+     * @throws InvalidContainerServiceException      when the service does not match the requested class or interface
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function get(string $serviceId): object
     {
@@ -58,9 +59,9 @@ final readonly class ContainerResolver
      *
      * @return T
      *
-     * @throws MissingContainerServiceException when the service is not registered
-     * @throws InvalidContainerServiceException when the service does not match the expected type
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the service is not registered
+     * @throws InvalidContainerServiceException      when the service does not match the expected type
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function getAs(string $serviceId, string $expectedType): object
     {
@@ -79,8 +80,8 @@ final readonly class ContainerResolver
     }
 
     /**
-     * @throws MissingContainerServiceException when the service is not registered
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the service is not registered
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function getExisting(string $serviceId): mixed
     {
@@ -105,9 +106,9 @@ final readonly class ContainerResolver
      *
      * @return null|T
      *
-     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
-     * @throws InvalidContainerServiceException when the service exists but does not match the requested class or interface
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException      when the service exists but does not match the requested class or interface
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function optional(string $serviceId): ?object
     {
@@ -121,9 +122,9 @@ final readonly class ContainerResolver
      *
      * @return null|T
      *
-     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
-     * @throws InvalidContainerServiceException when the service exists but does not match the expected type
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException      when the service exists but does not match the expected type
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function optionalAs(string $serviceId, string $expectedType): ?object
     {
@@ -146,8 +147,8 @@ final readonly class ContainerResolver
     }
 
     /**
-     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the container reports the service exists but cannot find it during resolution
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function optionalExisting(string $serviceId, mixed $default = null): mixed
     {
@@ -159,9 +160,9 @@ final readonly class ContainerResolver
     /**
      * @return array<mixed>
      *
-     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
-     * @throws InvalidContainerServiceException when the service exists but is not an array
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException      when the service exists but is not an array
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function optionalArray(string $serviceId = 'config'): array
     {
@@ -186,9 +187,9 @@ final readonly class ContainerResolver
     /**
      * @return array<string, mixed>
      *
-     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
-     * @throws InvalidContainerServiceException when the service exists but is not a string-keyed array
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the container reports the service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException      when the service exists but is not a string-keyed array
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     public function optionalMap(string $serviceId = 'config'): array
     {
@@ -212,8 +213,8 @@ final readonly class ContainerResolver
     /**
      * @return array{0: bool, 1: mixed}
      *
-     * @throws MissingContainerServiceException when the container reports the service exists but cannot find it during resolution
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the service
+     * @throws MissingContainerServiceException      when the container reports the service exists but cannot find it during resolution
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the service
      */
     private function findExisting(string $serviceId): array
     {

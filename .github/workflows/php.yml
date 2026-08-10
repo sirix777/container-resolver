@@ -69,6 +69,7 @@ jobs:
               run: |
                   archive="$(find build -maxdepth 1 -name '*.tar' -print -quit)"
                   test -n "$archive"
+                  archive="$(realpath "$archive")"
                   archive_url="file://$archive"
                   installation_directory="$(mktemp -d)"
                   repository='{"type":"package","package":{"name":"sirix/container-resolver","version":"1.0.0","dist":{"url":"'"$archive_url"'","type":"tar"},"require":{"php":"^8.2","psr/container":"^1.0 || ^2.0"}}}'

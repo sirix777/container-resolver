@@ -24,10 +24,10 @@ final readonly class ArrayContainer implements ContainerInterface
         private array $notFoundOnGet = [],
     ) {}
 
-    public function get(string $id): mixed
+    public function get(mixed $id): mixed
     {
-        if (in_array($id, $this->notFoundOnGet, true)) {
-            throw new TestNotFoundException($id);
+        if (! $this->isServiceId($id) || in_array($id, $this->notFoundOnGet, true)) {
+            throw new TestNotFoundException((string) $id);
         }
 
         if (! $this->has($id)) {
@@ -37,9 +37,14 @@ final readonly class ArrayContainer implements ContainerInterface
         return $this->services[$id];
     }
 
-    public function has(string $id): bool
+    public function has(mixed $id): bool
     {
-        return array_key_exists($id, $this->services);
+        return $this->isServiceId($id) && array_key_exists($id, $this->services);
+    }
+
+    private function isServiceId(mixed $id): bool
+    {
+        return is_string($id);
     }
 }
 

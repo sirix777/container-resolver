@@ -12,6 +12,7 @@ use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
 use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\ContainerResolver\Exception\MissingConfigValueException;
 use Sirix\ContainerResolver\Exception\MissingContainerServiceException;
+use Throwable;
 use UnitEnum;
 
 use function array_is_list;
@@ -50,9 +51,9 @@ final readonly class ConfigReader
     }
 
     /**
-     * @throws MissingContainerServiceException when the container reports the config service exists but cannot find it during resolution
-     * @throws InvalidContainerServiceException when the config service exists but is not an array
-     * @throws ContainerExceptionInterface      when the underlying container fails to resolve the config service
+     * @throws MissingContainerServiceException      when the container reports the config service exists but cannot find it during resolution
+     * @throws InvalidContainerServiceException      when the config service exists but is not an array
+     * @throws ContainerExceptionInterface&Throwable when the underlying container fails to resolve the config service
      */
     public static function fromContainer(ContainerResolver $containerResolver, string $serviceId = 'config'): self
     {
