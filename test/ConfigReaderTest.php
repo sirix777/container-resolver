@@ -14,6 +14,7 @@ use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
 use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\ContainerResolver\Exception\MissingConfigValueException;
 use SirixTest\ContainerResolver\TestAsset\ArrayContainer;
+use SirixTest\ContainerResolver\TestAsset\EmptyMode;
 use SirixTest\ContainerResolver\TestAsset\LogLevel;
 use SirixTest\ContainerResolver\TestAsset\StringDriver;
 use SirixTest\ContainerResolver\TestAsset\UnitMode;
@@ -743,6 +744,45 @@ final class ConfigReaderTest extends TestCase
         $invalid->requiredStringEnum('driver', ['bearer', 'cookie']);
     }
 
+    public function testRequiredStringEnumAcceptsAndRejectsStringValues(): void
+    {
+        $configReader = ConfigReader::fromArray([
+            'driver' => ' bearer ',
+        ]);
+
+        self::assertSame('bearer', $configReader->requiredStringEnum('driver', ['bearer', 'cookie']));
+
+        $unsupported = ConfigReader::fromArray([
+            'driver' => 'redis',
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+
+        $unsupported->requiredStringEnum('driver', ['bearer', 'cookie']);
+    }
+
+    public function testEnumRejectsNonStringStringBackedValuesAndEmptyEnums(): void
+    {
+        $configReader = ConfigReader::fromArray([
+            'driver' => false,
+        ]);
+
+        try {
+            $configReader->requiredEnum('driver', StringDriver::class);
+            self::fail('Expected invalid config exception.');
+        } catch (InvalidConfigValueException) {
+            self::addToAssertionCount(1);
+        }
+
+        $empty = ConfigReader::fromArray([
+            'mode' => 'invalid',
+        ]);
+
+        $this->expectException(InvalidConfigValueException::class);
+
+        $empty->requiredEnum('mode', EmptyMode::class);
+    }
+
     public function testMultipleReadersDoNotLeakValuesBetweenInstances(): void
     {
         $configReader = ConfigReader::fromArray([
@@ -807,6 +847,7 @@ final class ConfigReaderTest extends TestCase
         $configReader = ConfigReader::fromArray([]);
 
         self::assertSame('fallback', $configReader->string('missing', ' fallback '));
+        self::assertSame('fallback', $configReader->nonEmptyString('missing', ' fallback '));
         self::assertSame(['first'], $configReader->stringList('missing', [' first ']));
         self::assertSame(['first'], $configReader->nonEmptyStringList('missing', [' first ']));
         self::assertSame('cookie', $configReader->stringEnum('missing', [' bearer ', ' cookie '], ' cookie '));
@@ -835,6 +876,7 @@ final class ConfigReaderTest extends TestCase
             ], 'allowed'),
             static fn (): string => $configReader->stringEnum('missing', [123], 'fallback'),
             static fn (): string => $configReader->stringEnum('missing', ['allowed'], 'fallback'),
+            static fn (): string => $configReader->nonEmptyString('missing', '   '),
             static fn () => (new ReflectionMethod(ConfigReader::class, 'enum'))->invoke(
                 $configReader,
                 'missing',
