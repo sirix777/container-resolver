@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to Semantic Versioning.
 
+## [1.0.0] - 2026-08-13
+
+### Changed
+- Promoted the tested 0.2.0 API to the first stable release. No source-level API changes were made after 0.2.0.
+- Declared the public API and behavior documented in `README.md` stable under Semantic Versioning.
+
 ## [0.2.0] - 2026-08-10
 
 ### Added
@@ -11,7 +17,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Distinct `optionalArray()` and `optionalMap()` APIs for arbitrary arrays and string-keyed configuration maps.
 - Validation of reader defaults and enum schemas, ensuring default values always satisfy the declared return contract.
 - Stable dot-path validation and documented `null` semantics.
-- `UPGRADE.md` and `SECURITY.md`.
 - CI validation across PHP 8.2–8.5 and `psr/container` 1.x and 2.x.
 - A CI-enforced 100% statement-coverage threshold for `src`.
 

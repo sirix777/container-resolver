@@ -6,7 +6,20 @@ Strict PSR-11 container service resolver and typed configuration reader for reus
 
 ## Stability and requirements
 
-`0.2.0` is a pre-release. It supports PHP `^8.2` and `psr/container` 1.x or 2.x. Public contracts may change before the first stable release;
+`1.0.0` is the first stable release. It supports PHP 8.2-8.5 and `psr/container` 1.x or 2.x.
+
+### Stable public contract
+
+Starting with 1.0.0, the public API follows [Semantic Versioning](https://semver.org/): backward-incompatible changes to the documented public contract require a new major version.
+
+The stable contract comprises:
+
+- the public classes and exception interfaces in the `Sirix\ContainerResolver` namespace;
+- public method names, parameter order, types, return types, and named parameters (including `default:`);
+- the service-resolution, configuration-validation, normalization, and exception behavior documented below;
+- support for the PHP and `psr/container` versions stated above.
+
+Within 1.x, new optional capabilities may be added in minor releases and bug fixes may be released in patch versions. Applications should catch the documented package exception interfaces rather than depend on exception-message text.
 
 ## Installation
 
