@@ -20,7 +20,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                php-version: ["8.2", "8.3", "8.4", "8.5"]
+                php-version: ["8.3", "8.4", "8.5", "8.6"]
                 psr-container: ["1.0.0", "^2.0"]
         steps:
             - uses: actions/checkout@v5
@@ -72,7 +72,7 @@ jobs:
                   archive="$(realpath "$archive")"
                   archive_url="file://$archive"
                   installation_directory="$(mktemp -d)"
-                  repository='{"type":"package","package":{"name":"sirix/container-resolver","version":"1.0.0","dist":{"url":"'"$archive_url"'","type":"tar"},"require":{"php":"^8.2","psr/container":"^1.0 || ^2.0"}}}'
+                  repository='{"type":"package","package":{"name":"sirix/container-resolver","version":"1.0.0","dist":{"url":"'"$archive_url"'","type":"tar"},"require":{"php":"^8.3","psr/container":"^1.0 || ^2.0"}}}'
                   composer init --name=release/archive-check --no-interaction --working-dir="$installation_directory"
                   composer config repositories.container-resolver "$repository" --working-dir="$installation_directory"
                   composer require --no-install --no-interaction 'sirix/container-resolver:1.0.0' --working-dir="$installation_directory"
